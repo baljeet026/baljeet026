@@ -1,0 +1,601 @@
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "# Adaptive RSA and DH key exchange - Baljeet Singh (40138264)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Adaptive RSA"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "###### References:\n",
+    "###### https://www.edureka.co/blog/gcd-in-python/\n",
+    "###### https://medium.com/@prudywsh/how-to-generate-big-prime-numbers-miller-rabin-49e6e6af32fb        "
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### Import libraries"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 1,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "import random\n",
+    "import math\n",
+    "from random import randint"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### Create functions for various computations (For RSA)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "#Helper function for generation of n bits prime number\n",
+    "def is_prime(number, test_count):\n",
+    "    if number == 1:\n",
+    "        return False\n",
+    "    if test_count >= number:\n",
+    "        test_count = number - 1\n",
+    "    for x in range(test_count):\n",
+    "        val = randint(1, number - 1)\n",
+    "        if pow(val, number - 1, number) != 1:\n",
+    "            return False\n",
+    "    return True"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "#Function to generate n bits prime number (In this case, a 16 bit prime)\n",
+    "def generate_n_bits_prime(n_bits):\n",
+    "    found_prime = False\n",
+    "    while not found_prime:\n",
+    "        prime = randint(2**(n_bits - 1), 2 ** n_bits)\n",
+    "        if is_prime(prime, 1000):\n",
+    "            return prime"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "#Helper Function to check if p is prime\n",
+    "def check_prime_p(p):\n",
+    "    for i in range(2, p):\n",
+    "        if p % i == 0:\n",
+    "            return False\n",
+    "        else:\n",
+    "            return True"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "#Helper Funcion to check if q is prime\n",
+    "def check_prime_q(q):\n",
+    "    for i in range(2, q):\n",
+    "        if q % i == 0:\n",
+    "            return False\n",
+    "        else:\n",
+    "            return True"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "#Function to check if both p and q are prime\n",
+    "def check_p_q_prime(p, q):\n",
+    "\n",
+    "    if check_prime_p(p) and check_prime_q(q):\n",
+    "        return f\"{p} and {q} prime: True\"\n",
+    "    else:\n",
+    "        return f\"{p} and {q} prime: False\""
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "#Function to calculate N\n",
+    "def calculate_N(p, q):\n",
+    "    N = p * q\n",
+    "    return N"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "#Function to calculate phi(N)\n",
+    "def calculate_phi_N(p, q):\n",
+    "    phi_N = (p - 1) * (q - 1)\n",
+    "    return phi_N\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "#Function to generate random e\n",
+    "def generate_e():\n",
+    "    e = random.randint(1, calculate_phi_N(p, q))\n",
+    "    return e"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "#Function to calculate gcd(e, phi(N))\n",
+    "def calculate_gcd(e, phi_N):\n",
+    "    if phi_N == 0:\n",
+    "        return e\n",
+    "    else:\n",
+    "        return calculate_gcd(phi_N, e % phi_N)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "#Helper function to calculate d\n",
+    "def e_gcd(a, b):\n",
+    "    if a == 0:\n",
+    "        return (b, 0, 1)\n",
+    "    g, y, x = e_gcd(b%a,a)\n",
+    "    return (g, x - (b//a) * y, y)\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "#Function to calculate d, if gcd(e, phi(1)) is not equal to 1 --> throw an exception\n",
+    "def calculate_d(a, m):\n",
+    "    g, x, y = e_gcd(a, m)\n",
+    "    if g != 1:\n",
+    "        raise Exception('No modular inverse found')\n",
+    "    return x%m"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "#Main function for RSA encryption --> C = m^e mod N\n",
+    "def rsa_encryption(m, e, N):\n",
+    "    result = 1\n",
+    "    while e > 0:\n",
+    "        if e % 2 == 1:\n",
+    "            result = (result * m) % N\n",
+    "        e = e // 2\n",
+    "        m = (m * m) % N\n",
+    "    return result"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 40,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "#Main function for RSA decryption --> m = C^d mod N\n",
+    "def rsa_decryption(C, d, N):\n",
+    "    m = 1\n",
+    "    while d > 0:\n",
+    "        if d % 2 == 1:\n",
+    "            m = (m * C) % N\n",
+    "        d = d // 2\n",
+    "        C = (C * C) % N\n",
+    "    return m"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### Test the encryption algorithm"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 49,
+   "metadata": {
+    "scrolled": true
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Enter the message you want to encrypt: 52\n",
+      "Enter N: 77\n",
+      "Enter e: 13\n",
+      "Generated Cypher Text : 17 \n"
+     ]
+    }
+   ],
+   "source": [
+    "# Ask to enter message\n",
+    "m = int(input(\"Enter the message you want to encrypt: \"))\n",
+    "\n",
+    "# Ask N and e --> Public key\n",
+    "N = int(input(\"Enter N: \"))\n",
+    "e = int(input(\"Enter e: \"))\n",
+    "\n",
+    "C = rsa_encryption(m, e, N)\n",
+    "print(f\"Generated Cypher Text : {C} \")"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### Test the decryption algorithm"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 48,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Enter the cipher text you want to decrypt: 17\n",
+      "Enter the first prime: 7\n",
+      "Enter the second prime: 11\n",
+      "7 and 11 prime: True\n",
+      "phi_N : 60\n",
+      "gcd(e, phi(N): 1\n",
+      "d: 37\n",
+      "Decrypted text: 52\n"
+     ]
+    }
+   ],
+   "source": [
+    "C = int(input(\"Enter the cipher text you want to decrypt: \"))\n",
+    "p = int(input(\"Enter the first prime: \"))\n",
+    "q = int(input(\"Enter the second prime: \"))\n",
+    "\n",
+    "# calling a function to check if p and q are prime\n",
+    "print(check_p_q_prime(p, q))\n",
+    "\n",
+    "# calling a function to calculate phi(N)\n",
+    "phi_N = calculate_phi_N(p, q)\n",
+    "print(f\"phi_N : {phi_N}\")\n",
+    "\n",
+    "# calling a function to compute gcd(e, phi(N))\n",
+    "gcd = calculate_gcd(e, phi_N)\n",
+    "print(f\"gcd(e, phi(N): {gcd}\")\n",
+    "\n",
+    "# calling a function to compute d --> d = e^1 mod phi(N)\n",
+    "d = calculate_d(e, phi_N)\n",
+    "print(f\"d: {d}\")\n",
+    "\n",
+    "# calling afunction for RSA decryption --> m = C^d mod N\n",
+    "m = rsa_decryption(C, d, N)\n",
+    "print(f\"Decrypted text: {m}\")"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### Encryption for RSA (Automatic prime generation)\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 89,
+   "metadata": {
+    "scrolled": true
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Enter the message you want to encrypt: 52\n",
+      "p : 39383\n",
+      "q : 49211\n",
+      "phi_N : 1937988220\n",
+      "e: 1748837933\n",
+      "gcd(e, phi(N): 1\n",
+      "d: 1873294337\n",
+      "Encrypted text: 61\n"
+     ]
+    }
+   ],
+   "source": [
+    "# Note: You may have to run this part multiple times as it will give an exception if gcd(e, phi(N)) is not equal to 1.\n",
+    "\n",
+    "m = int(input(\"Enter the message you want to encrypt: \"))\n",
+    "\n",
+    "# generating p and q values\n",
+    "p = generate_n_bits_prime(16)\n",
+    "print(f\"p : {p}\")\n",
+    "q = generate_n_bits_prime(16)\n",
+    "print(f\"q : {q}\")\n",
+    "\n",
+    "# calling a function to calculate phi(N)\n",
+    "phi_N = calculate_phi_N(p, q)\n",
+    "print(f\"phi_N : {phi_N}\")\n",
+    "\n",
+    "# calling a function to generate e\n",
+    "e = generate_e()\n",
+    "print(f\"e: {e}\")\n",
+    "\n",
+    "# calling a function to compute gcd(e, phi(N))\n",
+    "gcd = calculate_gcd(e, phi_N)\n",
+    "print(f\"gcd(e, phi(N): {gcd}\")\n",
+    "\n",
+    "# calling a function to compute d --> d = e^1 mod phi(N)\n",
+    "d = calculate_d(e, phi_N)\n",
+    "print(f\"d: {d}\")\n",
+    "\n",
+    "# calling a function for RSA encryption --> C = m^e mod N\n",
+    "C = rsa_encryption(m, e, N)\n",
+    "print(f\"Encrypted text: {C}\")"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### Decryption for RSA (Verifying the above encryption)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 90,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Enter the encrypted text: 61\n",
+      "Enter the first prime: 39383\n",
+      "Enter the second prime: 49211\n",
+      "39383 and 49211 prime: True\n",
+      "phi_N : 1937988220\n",
+      "gcd(e, phi(N): 1\n",
+      "d: 1873294337\n",
+      "Decrypted text: 52\n"
+     ]
+    }
+   ],
+   "source": [
+    "C = int(input(\"Enter the encrypted text: \"))\n",
+    "p = int(input(\"Enter the first prime: \"))\n",
+    "q = int(input(\"Enter the second prime: \"))\n",
+    "\n",
+    "# calling a function to check if p and q are prime\n",
+    "print(check_p_q_prime(p, q))\n",
+    "\n",
+    "# calling a function to calculate phi(N)\n",
+    "phi_N = calculate_phi_N(p, q)\n",
+    "print(f\"phi_N : {phi_N}\")\n",
+    "\n",
+    "# calling a function to compute gcd(e, phi(N))\n",
+    "gcd = calculate_gcd(e, phi_N)\n",
+    "print(f\"gcd(e, phi(N): {gcd}\")\n",
+    "\n",
+    "# calling a function to compute d --> d = e^1 mod phi(N)\n",
+    "d = calculate_d(e, phi_N)\n",
+    "print(f\"d: {d}\")\n",
+    "\n",
+    "# calling afunction for RSA decryption --> m = C^d mod N\n",
+    "m = rsa_decryption(C, d, N)\n",
+    "print(f\"Decrypted text: {m}\")"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## DH key Exchange"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 91,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Helper function to generate n bit prime\n",
+    "def is_prime(number, test_count):\n",
+    "    if number == 1:\n",
+    "        return False\n",
+    "    if test_count >= number:\n",
+    "        test_count = number - 1\n",
+    "    for x in range(test_count):\n",
+    "        val = randint(1, number - 1)\n",
+    "        if pow(val, number - 1, number) != 1:\n",
+    "            return False\n",
+    "    return True"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 92,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Function to generate n bits prime number\n",
+    "def generate_n_bits_prime(n_bits):\n",
+    "    found_prime = False\n",
+    "    while not found_prime:\n",
+    "        prime = randint(2**(n_bits - 1), 2 ** n_bits)\n",
+    "        if is_prime(prime, 1000):\n",
+    "            return prime"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 93,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# First person sends --> R = g^a mod p to the second person\n",
+    "# Second person sends --> S = g^b mop p to the first person\n",
+    "\n",
+    "# Helper function to generate R\n",
+    "def generate_R():\n",
+    "    R = (generator**a) % large_prime\n",
+    "    return R\n",
+    "\n",
+    "# Helper function to generate S\n",
+    "def generate_S():\n",
+    "    S = (generator**b) % large_prime\n",
+    "    return S"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### Key exchange"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 94,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Function to compute the first person's key\n",
+    "def generate_first_key():\n",
+    "    first_key = (generate_R()**b) % large_prime\n",
+    "    return first_key\n",
+    "\n",
+    "# Function to compute second person's key\n",
+    "def generates_second_key():\n",
+    "    second_key = (generate_S()**a) % large_prime\n",
+    "    return second_key"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 97,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Do you have a large prime? Y/N: n\n",
+      "Enter the number of bits for your prime: 20\n",
+      "Generated prime number: 639911\n",
+      "Enter the generator number: 34567\n",
+      "Enter a for the first person: 1234\n",
+      "Enter b for the second person: 4321\n",
+      "--------------------------------\n",
+      "First person's secret key: 503212\n",
+      "Second person's secret key: 503212\n"
+     ]
+    }
+   ],
+   "source": [
+    "# Ask the user if they have their own prime\n",
+    "ask_if_prime = input(\"Do you have a large prime? Y/N: \").upper()\n",
+    "\n",
+    "if ask_if_prime == \"Y\":\n",
+    "    # Ask the user to enter prime number p\n",
+    "    large_prime = int(input(\"Enter the prime number: \"))\n",
+    "else:\n",
+    "    # Ask user to enter the bits for prime\n",
+    "    ask_bits = int(input(\"Enter the number of bits for your prime: \"))\n",
+    "    # Call the function to generate prime\n",
+    "    large_prime = generate_n_bits_prime(ask_bits)\n",
+    "    print(f\"Generated prime number: {large_prime}\")\n",
+    "\n",
+    "# Ask the user to enter generator number\n",
+    "generator = int(input(\"Enter the generator number: \"))\n",
+    "# Ask the user to enter the chosen a for first person\n",
+    "a = int(input(\"Enter a for the first person: \"))\n",
+    "# Ask the user to enter the chosen b for second person\n",
+    "b = int(input(\"Enter b for the second person: \"))\n",
+    "\n",
+    "\n",
+    "\n",
+    "print(\"--------------------------------\")\n",
+    "# Call the functions to generate computed secret keys\n",
+    "print(f\"First person's secret key: {generate_first_key()}\")\n",
+    "print(f\"Second person's secret key: {generates_second_key()}\")"
+   ]
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "display_name": "Python 3",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.8.3"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 4
+}
